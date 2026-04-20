@@ -1,11 +1,12 @@
-function getMonthName(i) {
-    const n = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
-    return n[i];
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function getMonthIndex(name) {
+    return MONTHS.indexOf(name);
 }
 
-function getFullMonthName(i) {
-    const n = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-    return n[i];
+function getShortMonth(i) {
+    const n = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+    return n[i % 12];
 }
 
 function addMonths(sm, sy, offset) {
@@ -21,17 +22,20 @@ function fmtDate(d) {
 
 function fmtTime(d) {
     const hh = String(d.getHours()).padStart(2, "0");
-    const mi = String(d.getMinutes()).padStart(2, "0");
-    return hh + ":" + mi;
+    const mn = String(d.getMinutes()).padStart(2, "0");
+    return hh + ":" + mn;
 }
 
-document.getElementById("bill-form").addEventListener("submit", function(e) {
-    e.preventDefault();
+function getRate(fuelType) {
+    const rates = { Petrol: 102, Diesel: 92, XP95: 108, Power: 98 };
+    return rates[fuelType] || 102;
+}
 
-    const totalAmount = parseFloat(document.getElementById("totalAmount").value);
-    const months = parseInt(document.getElementById("months").value, 10);
-    const startMonth = parseInt(document.getElementById("startMonth").value, 10);
-    const startYear = parseInt(document.getElementById("startYear").value, 10);
+function generateBills() {
+    const totalAmount = parseFloat(document.getElementById("totalAmount").value) || 0;
+    const numMonths = parseInt(document.getElementById("months").value) || 1;
+    const startMonthName = document.getElementById("startMonth").value;
+    const startYear = parseInt(document.getElementById("startYear").value) || new Date().getFullYear();
     const customerName = document.getElementById("customerName").value.trim();
     const vehicleNo = document.getElementById("vehicleNo").value.trim();
     const fuelType = document.getElementById("fuelType").value;
@@ -40,157 +44,98 @@ document.getElementById("bill-form").addEventListener("submit", function(e) {
     const template = document.getElementById("template").value;
     const paperWidth = document.getElementById("paperWidth").value;
 
-    if (isNaN(totalAmount) || isNaN(months) || months <= 0) {
-        alert("Please enter valid values.");
+    if (totalAmount <= 0) {
+        alert("Please enter a valid total amount");
         return;
     }
 
-    const monthlyAmount = Math.round((totalAmount / months) * 100) / 100;
-    const assumedRate = fuelType === "Diesel" ? 92.5 : 104.5;
-    const liters = Math.round((monthlyAmount / assumedRate) * 100) / 100;
+    const perMonthAmount = totalAmount / numMonths;
+    const rate = getRate(fuelType);
+    const volume = perMonthAmount / rate;
+
+    const startMonthIdx = getMonthIndex(startMonthName);
     const container = document.getElementById("bills-container");
     container.innerHTML = "";
-    const now = new Date();
 
-    for (let i = 0; i < months; i++) {
-        const { month, year } = addMonths(startMonth, startYear, i);
-        const receiptNo = 1000 + i;
-
+    for (let i = 0; i < numMonths; i++) {
+        const mInfo = addMonths(startMonthIdx, startYear, i);
+        const monthName = MONTHS[mInfo.month];
+        const receiptNo = 2467 + i;
+        const billDate = new Date(startYear, mInfo.month, 1);
         const bill = document.createElement("div");
-        bill.className = "bill bill-" + paperWidth + " bill-" + template;
+        bill.className = "bill width-" + paperWidth;
+        bill.dataset.index = i;
 
-        const company = template === "bharat" ? "BHARAT PETROLEUM" : "INDIAN OIL";
-        const gstNo = template === "bharat" ? "33ABCDE1234F1Z5" : "33XYZAB5678C1Z9";
+        const logoHtml = template === "Indian Oil" ?
+            '<div class="io-logo"><div class="circle"><span>IO</span></div></div><div class="brand-name">Indian Oil</div>' :
+            '<div class="bp-logo"><div class="swirl"></div></div><div class="brand-name">Bharat Petroleum</div>';
 
-        const presetLine = presetFlag ? `
-            <div class="bill-row">
-                <span class="label">PRESET</span>
-                <span>AMOUNT</span>
-            </div>
-        ` : "";
-
-        bill.innerHTML = `
-            <div class="bill-header">
-                <div class="logo-box">` + company + `</div>
-                <div class="pump-name">` + company + ` RETAIL OUTLET</div>
-                <div class="pump-address">Outer Ring Road, Chennai - 600 096</div>
-                <div class="gst-line">GSTIN: <span class="gstno">` + gstNo + `</span> | TIN: 1234567890</div>
-            </div>
-
-            <div class="bill-section-title">FUEL PURCHASE RECEIPT</div>
-
-            <div class="bill-meta">
-                <div class="bill-row">
-                    <span class="label">Receipt ID</span>
-                    <span>` + receiptNo + `</span>
-                </div>
-                <div class="bill-row">
-                    <span class="label">Bill Period</span>
-                    <span>` + getFullMonthName(month) + ` ` + year + `</span>
-                </div>
-                <div class="bill-row">
-                    <span class="label">Date</span>
-                    <span>` + fmtDate(now) + `</span>
-                </div>
-                <div class="bill-row">
-                    <span class="label">Time</span>
-                    <span>` + fmtTime(now) + `</span>
-                </div>
-                <div class="bill-row">
-                    <span class="label">Customer</span>
-                    <span>` + (customerName || "-") + `</span>
-                </div>
-                <div class="bill-row">
-                    <span class="label">Vehicle</span>
-                    <span>` + (vehicleNo || "-") + `</span>
-                </div>
-                <div class="bill-row">
-                    <span class="label">Fuel</span>
-                    <span>` + fuelType + `</span>
-                </div>
-                <div class="bill-row">
-                    <span class="label">Mode</span>
-                    <span>` + payMode + `</span>
-                </div>
-                ` + presetLine + `
-            </div>
-
-            <div class="bill-items">
-                <div class="bill-items-header">
-                    <span>Product</span>
-                    <span>Rate</span>
-                    <span>Qty</span>
-                    <span>Amt</span>
-                </div>
-                <div class="bill-items-row">
-                    <span>` + fuelType + `</span>
-                    <span>` + assumedRate.toFixed(2) + `</span>
-                    <span>` + liters.toFixed(2) + `L</span>
-                    <span>` + monthlyAmount.toFixed(2) + `</span>
-                </div>
-            </div>
-
-            <div class="bill-total-row">
-                <span class="label">TOTAL (INR)</span>
-                <span>` + monthlyAmount.toFixed(2) + `</span>
-            </div>
-
-            <div class="bill-divider"></div>
-
-            <div class="bill-footer">
-                ORIGINAL FOR RECIPIENT<br/>
-                Thank you. Visit Again.<br/>
-                Save Fuel, Save Money.
-            </div>
-        `;
+        bill.innerHTML = '<div class="bill-header">' +
+            logoHtml +
+            '<div class="welcome">WELCOME!!!</div>' +
+            '<div class="outlet-name">Bharat Petroleum Murugan</div>' +
+            '<div class="outlet-name">oil Bharat Petroleum Murugan</div>' +
+            '<div class="outlet-name">oil</div>' +
+            '<div class="outlet-name">TEL NO: 4068199</div>' +
+            '</div>' +
+            '<div class="receipt-info">' +
+            '<div class="row"><span>RECEIPT NO:</span><span>' + receiptNo + '</span></div>' +
+            '<div class="row"><span>FCC ID:</span><span></span></div>' +
+            '<div class="row"><span>FLP NO:</span><span></span></div>' +
+            '<div class="row"><span>NOZZLE NO:</span><span></span></div>' +
+            '</div>' +
+            '<div class="product-section">' +
+            '<div class="row"><span>PRODUCT:</span><span>' + fuelType + '</span></div>' +
+            '<div class="row"><span>RATE/LTR:</span><span>' + rate.toFixed(2) + '</span></div>' +
+            '<div class="row amount-row"><span>AMOUNT:</span><span>' + perMonthAmount.toFixed(2) + '</span></div>' +
+            '<div class="row"><span>VOLUME(LTR):</span><span>' + volume.toFixed(2) + ' lt</span></div>' +
+            '</div>' +
+            '<div class="vehicle-section">' +
+            '<div class="row"><span>VEH TYPE:</span><span>' + fuelType + '</span></div>' +
+            '<div class="row"><span>VEH NO:</span><span>' + vehicleNo + '</span></div>' +
+            '<div class="row"><span>CUSTOMER NAME:</span><span>' + customerName + '</span></div>' +
+            '</div>' +
+            '<div class="footer-section">' +
+            '<div class="row"><span>DATE:</span><span>' + fmtDate(billDate) + '</span></div>' +
+            '<div class="row"><span>MODE:</span><span>' + payMode + '</span></div>' +
+            '<div class="row"><span>LST NO:</span><span></span></div>' +
+            '<div class="row"><span>VAT NO:</span><span></span></div>' +
+            '<div class="row"><span>ATTENDANT ID:</span><span>not available</span></div>' +
+            '<div class="divider"></div>' +
+            '<div class="thank-you">' +
+            '<div class="line1">Thank You! Visit Again</div>' +
+            '<div class="line2">Save Fuel, Save Money.</div>' +
+            '</div>' +
+            '</div>';
 
         container.appendChild(bill);
     }
 
-    document.getElementById("downloadButtons").style.display = "flex";
-});
+    document.getElementById("actionButtons").style.display = "flex";
+}
 
-async function downloadBillsAsImages(format) {
+async function downloadAll(format) {
     const bills = document.querySelectorAll(".bill");
-    if (!bills.length) {
-        alert("No bills to download.");
-        return;
-    }
-
-    let index = 1;
-    for (const bill of bills) {
-        const canvas = await html2canvas(bill, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: "#fbfbfb"
-        });
-
-        let mimeType, ext, quality;
-        if (format === "jpg") {
-            mimeType = "image/jpeg";
-            ext = "jpg";
-            quality = 0.95;
-        } else {
-            mimeType = "image/png";
-            ext = "png";
-            quality = 1.0;
-        }
-
-        const dataUrl = canvas.toDataURL(mimeType, quality);
+    for (let i = 0; i < bills.length; i++) {
+        const bill = bills[i];
+        const canvas = await html2canvas(bill, { backgroundColor: "#f5f5f0" });
         const link = document.createElement("a");
-        link.href = dataUrl;
-        link.download = "fuel-bill-" + index + "." + ext;
-        document.body.appendChild(link);
+        link.download = "fuel-bill-" + (i + 1) + "." + format;
+        link.href = canvas.toDataURL("image/" + format);
         link.click();
-        document.body.removeChild(link);
-        index++;
+        await new Promise(r => setTimeout(r, 300));
     }
 }
 
-document.getElementById("downloadPngBtn").addEventListener("click", function() {
-    downloadBillsAsImages("png");
+document.getElementById("bill-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    generateBills();
 });
 
-document.getElementById("downloadJpgBtn").addEventListener("click", function() {
-    downloadBillsAsImages("jpg");
+document.getElementById("downloadPng").addEventListener("click", function() {
+    downloadAll("png");
+});
+
+document.getElementById("downloadJpg").addEventListener("click", function() {
+    downloadAll("jpeg");
 });
