@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fuel Bill Generator</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Fuel Bill Generator</h1>
+
+        <form id="bill-form">
+            <div class="form-section">
+                <h3>Bill Details</h3>
+                <div class="form-row">
+                    <label>Total Amount (INR)</label>
+                    <input type="number" id="totalAmount" min="0" step="0.01" required />
+                </div>
+                <div class="form-row">
+                    <label>Number of Months</label>
+                    <input type="number" id="months" min="1" max="24" value="1" required />
+                </div>
+                <div class="form-row">
+                    <label>Start Month</label>
+                    <select id="startMonth">
+                        <option value="0">January</option>
+                        <option value="1">February</option>
+                        <option value="2">March</option>
+                        <option value="3">April</option>
+                        <option value="4">May</option>
+                        <option value="5">June</option>
+                        <option value="6">July</option>
+                        <option value="7">August</option>
+                        <option value="8">September</option>
+                        <option value="9">October</option>
+                        <option value="10">November</option>
+                        <option value="11">December</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Start Year</label>
+                    <input type="number" id="startYear" value="2026" min="2000" max="2100" required />
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Customer Details</h3>
+                <div class="form-row">
+                    <label>Customer Name</label>
+                    <input type="text" id="customerName" placeholder="e.g. Siva Kumar" />
+                </div>
+                <div class="form-row">
+                    <label>Vehicle Number</label>
+                    <input type="text" id="vehicleNo" placeholder="e.g. TN 01 AB 1234" />
+                </div>
+                <div class="form-row">
+                    <label>Fuel Type</label>
+                    <select id="fuelType">
+                        <option value="Petrol">Petrol</option>
+                        <option value="Diesel">Diesel</option>
+                        <option value="XP95">XP95</option>
+                        <option value="Power">Power</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Payment Mode</label>
+                    <select id="payMode">
+                        <option value="Cash">Cash</option>
+                        <option value="UPI">UPI</option>
+                        <option value="Card">Card</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Bill Settings</h3>
+                <div class="form-row">
+                    <label>Preset: Amount</label>
+                    <input type="checkbox" id="presetFlag" checked />
+                </div>
+                <div class="form-row">
+                    <label>Template</label>
+                    <select id="template">
+                        <option value="bharat">Bharat Petroleum</option>
+                        <option value="indianoil">Indian Oil</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Bill Width</label>
+                    <select id="paperWidth">
+                        <option value="58">58 mm</option>
+                        <option value="80" selected>80 mm</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit">Generate Bills</button>
+        </form>
+
+        <hr />
+
+        <div id="downloadButtons" style="display:none; margin-top:10px;">
+            <button id="downloadPngBtn">Download Bills as PNG</button>
+            <button id="downloadJpgBtn">Download Bills as JPG</button>
+        </div>
+
+        <div id="bills-container"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
